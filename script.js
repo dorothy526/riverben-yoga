@@ -1,164 +1,23 @@
-/* ============================================
-   Riverbend Yoga Studio - script.js
-   Interactive Feature + Form Validation + Storage
-   ============================================ */
 
-// Array of class options (used by the preference feature)
-const classOptions = [
-  { id: "gentle", name: "Gentle Yoga", description: "Slow and mindful" },
-  { id: "vinyasa", name: "Vinyasa Flow", description: "Breath-linked movement" },
-  { id: "restorative", name: "Restorative Yoga", description: "Deep relaxation" },
-  { id: "private", name: "Private Session", description: "One-on-one" },
-  { id: "workshop", name: "Workshop / Event", description: "Special offerings" }
+'use strict';
+const classes = [
+ {id:'gentle',title:'Gentle Yoga',description:'Slow, mindful movement and breathwork. A welcoming place to start.',best:'Beginners and anyone wanting a softer pace'},
+ {id:'vinyasa',title:'Vinyasa Flow',description:'Movement linked with breathing, with modifications offered.',best:'Students who enjoy an active flow'},
+ {id:'restorative',title:'Restorative Yoga',description:'Relaxing, supported poses for rest and recovery.',best:'Anyone looking for deep relaxation'}
 ];
-
-// ---------- Feature: Save Class Preference ----------
-function savePreference(classId) {
-  localStorage.setItem("preferredClass", classId);
-  showPreferenceFeedback(classId);
+const settings = {storageKey:'riverbendPreferredClass',defaultClass:'gentle'};
+function getSavedClass(){try{return localStorage.getItem(settings.storageKey)}catch{return null}}
+function saveClass(id){try{localStorage.setItem(settings.storageKey,id)}catch{/* Page still works when storage is blocked. */}}
+function selectClass(id,shouldSave=true){
+ const item=classes.find(c=>c.id===id);if(!item)return;
+ document.querySelectorAll('input[name="class-choice"]').forEach(r=>r.checked=r.value===id);
+ const output=document.getElementById('class-result');
+ if(output){output.innerHTML='';const heading=document.createElement('strong');heading.textContent=item.title+' — your selected class';const detail=document.createElement('p');detail.textContent=item.description+' Best for: '+item.best+'.';output.append(heading,detail)}
+ const interest=document.getElementById('interest');if(interest){interest.value=id;interest.dispatchEvent(new Event('change'))}
+ if(shouldSave)saveClass(id);
 }
-
-function loadPreference() {
-  return localStorage.getItem("preferredClass");
-}
-
-function showPreferenceFeedback(classId) {
-  const feedback = document.getElementById("preference-feedback");
-  if (!feedback) return;
-
-  const selected = classOptions.find(item => item.id === classId);
-  if (selected) {
-    feedback.textContent = "Saved: " + selected.name + " is now your preferred class.";
-    feedback.style.display = "block";
-  }
-}
-
-function setupPreferenceButtons() {
-  const buttons = document.querySelectorAll(".pref-btn");
-  buttons.forEach(function(btn) {
-    btn.addEventListener("click", function() {
-      const classId = btn.getAttribute("data-class");
-      savePreference(classId);
-
-      // Highlight the selected button
-      buttons.forEach(function(b) {
-        b.classList.remove("selected");
-      });
-      btn.classList.add("selected");
-    });
-  });
-
-  // Pre-select the saved preference if it exists
-  const saved = loadPreference();
-  if (saved) {
-    const activeBtn = document.querySelector('.pref-btn[data-class="' + saved + '"]');
-    if (activeBtn) {
-      activeBtn.classList.add("selected");
-      showPreferenceFeedback(saved);
-    }
-  }
-}
-
-// ---------- Pre-fill the Events form from storage ----------
-function prefillFormFromStorage() {
-  const interestSelect = document.getElementById("interest");
-  if (!interestSelect) return;
-
-  const saved = loadPreference();
-  if (saved) {
-    interestSelect.value = saved;
-  }
-}
-
-// ---------- Form Validation ----------
-function showError(fieldId, message) {
-  const errorEl = document.getElementById(fieldId + "-error");
-  if (errorEl) {
-    errorEl.textContent = message;
-    errorEl.style.display = "block";
-  }
-  const field = document.getElementById(fieldId);
-  if (field) {
-    field.classList.add("invalid");
-  }
-}
-
-function clearError(fieldId) {
-  const errorEl = document.getElementById(fieldId + "-error");
-  if (errorEl) {
-    errorEl.textContent = "";
-    errorEl.style.display = "none";
-  }
-  const field = document.getElementById(fieldId);
-  if (field) {
-    field.classList.remove("invalid");
-  }
-}
-
-function validateEmail(email) {
-  const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return pattern.test(email);
-}
-
-function validateForm(event) {
-  event.preventDefault();
-
-  let isValid = true;
-
-  // Clear previous errors
-  clearError("name");
-  clearError("email");
-  clearError("interest");
-
-  // Required: Name
-  const nameValue = document.getElementById("name").value.trim();
-  if (nameValue === "") {
-    showError("name", "Please enter your full name.");
-    isValid = false;
-  } else if (nameValue.length < 2) {
-    showError("name", "Name must be at least 2 characters.");
-    isValid = false;
-  }
-
-  // Required + Email format
-  const emailValue = document.getElementById("email").value.trim();
-  if (emailValue === "") {
-    showError("email", "Please enter your email address.");
-    isValid = false;
-  } else if (!validateEmail(emailValue)) {
-    showError("email", "Please enter a valid email address (example: name@email.com).");
-    isValid = false;
-  }
-
-  // Required: Interest
-  const interestValue = document.getElementById("interest").value;
-  if (interestValue === "") {
-    showError("interest", "Please select a class or event.");
-    isValid = false;
-  }
-
-  if (isValid) {
-    // Save the selected interest as preference
-    savePreference(interestValue);
-
-    // Simple success message
-    const successMsg = document.getElementById("form-success");
-    if (successMsg) {
-      successMsg.textContent = "Thank you! Your request has been received. We will contact you soon.";
-      successMsg.style.display = "block";
-    }
-  }
-
-  return isValid;
-}
-
-// ---------- Initialize everything when the page loads ----------
-document.addEventListener("DOMContentLoaded", function() {
-  setupPreferenceButtons();
-  prefillFormFromStorage();
-
-  const form = document.getElementById("interest-form");
-  if (form) {
-    form.addEventListener("submit", validateForm);
-  }
-});
+function setupClassSelector(){const radios=document.querySelectorAll('input[name="class-choice"]');if(!radios.length)return;radios.forEach(r=>r.addEventListener('change',()=>selectClass(r.value)));const saved=getSavedClass();if(saved&&classes.some(c=>c.id===saved))selectClass(saved,false);}
+function setError(field,message){const target=document.getElementById(field.id+'-error');if(target)target.textContent=message;field.classList.toggle('invalid',!!message);field.setAttribute('aria-invalid',String(!!message));}
+function validateField(field){let error='';const value=field.value.trim();if(field.id==='name'){if(!value)error='Please enter your full name.';else if(value.length<2)error='Your name must have at least 2 characters.'}if(field.id==='email'){if(!value)error='Please enter your email address.';else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))error='Please enter a valid email address.'}if(field.id==='interest'&&!value)error='Please choose a class or event.';setError(field,error);return !error;}
+function setupForm(){const form=document.getElementById('interest-form');if(!form)return;const fields=['name','email','interest'].map(id=>document.getElementById(id));fields.forEach(field=>{field.addEventListener('input',()=>validateField(field));field.addEventListener('change',()=>validateField(field))});const saved=getSavedClass();if(saved&&classes.some(c=>c.id===saved))document.getElementById('interest').value=saved;form.addEventListener('submit',e=>{e.preventDefault();let valid=true;fields.forEach(field=>{if(!validateField(field))valid=false});const status=document.getElementById('form-status');if(!valid){status.textContent='Please correct the highlighted fields before continuing.';status.className='error';fields.find(f=>f.classList.contains('invalid'))?.focus();return;}status.className='success';status.textContent='Your request is ready. This demonstration does not send information to the studio.';});}
+document.addEventListener('DOMContentLoaded',()=>{setupClassSelector();setupForm()});
